@@ -1,30 +1,26 @@
 package br.ufpe.cin.if699;
 
-import java.util.List;
-
 import br.ufpe.cin.if699.arff.ARFFParser;
 import br.ufpe.cin.if699.arff.Dataset;
-import br.ufpe.cin.if699.arff.Instance;
 
 public class MachineLearning {
 
 	public static void main(String[] args) {
-		Dataset dataset = new ARFFParser("assets/datasets/cm1.arff").getDataset();
+		Dataset dataset = new ARFFParser("assets/datasets/iris.arff").getDataset();
 
-		dataset.setClassIndex(dataset.getAttributes().size() - 1);
+		int ks[] = new int[] { 1, 2, 3, 5, 6, 11, 16, 21, 31 };
 
-		dataset.splitClassesInstances();
+		for (int k : ks) {
+			int folds = 10;
 
-		int k = 3;
-		KFold kFold = new KFold(k);
+			dataset.setClassIndex(dataset.getAttributes().size() - 1);
 
-		for (List<Instance> instances : dataset.getSplitedInstances()) {
-			kFold.distribute(instances);
-		}
+			dataset.createKFold(folds);
 
-		for (int i = 0; i < k; ++i) {
-			System.out.println("Fold: " + (i + 1));
-			kFold.count(dataset, i);
+			KNN kNN = new KNN(dataset, k);
+
+			long init = System.currentTimeMillis();
+			System.out.println(k + " = " + kNN.evaluate() + " (" + (System.currentTimeMillis() - init) + ")");
 		}
 	}
 

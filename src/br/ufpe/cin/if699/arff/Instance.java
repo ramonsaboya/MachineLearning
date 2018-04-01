@@ -3,7 +3,7 @@ package br.ufpe.cin.if699.arff;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Instance {
+public class Instance implements Comparable<Instance> {
 
 	private List<Object> attributeValues;
 
@@ -18,6 +18,10 @@ public class Instance {
 
 	public Object getAttributeValue(int index) {
 		return attributeValues.get(index);
+	}
+
+	public void setAttributeValue(int index, Object object) {
+		attributeValues.set(index, object);
 	}
 
 	public void insertAttributeValue(Object object) {
@@ -56,6 +60,11 @@ public class Instance {
 			return false;
 		}
 		return true;
+	}
+
+	@Override
+	public int compareTo(Instance o) {
+		return 0;
 	}
 
 }
