@@ -5,9 +5,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.PriorityQueue;
 
-import br.ufpe.cin.if699.arff.AttributeRange;
 import br.ufpe.cin.if699.arff.Dataset;
 import br.ufpe.cin.if699.arff.Instance;
+import br.ufpe.cin.if699.distances.KNNDistance;
 
 public class KNN {
 
@@ -22,24 +22,25 @@ public class KNN {
 	private double percentage;
 
 	private List<Instance> trainSet;
-	private List<AttributeRange> currentRange;
 
-	public KNN(Dataset dataset, KFold kFold, int k) {
+	private KNNDistance kNNDistance;
+
+	public KNN(Dataset dataset, int k, Class<? extends KNNDistance> distanceClass, boolean weighted) {
 		this.k = k;
+		this.kFold = dataset.getKFold();
 		this.folds = kFold.getK();
-		this.kFold = kFold;
 
 		this.dataset = dataset;
 
-		this.weighted = false;
-	}
-
-	public boolean isWeighted() {
-		return this.weighted;
-	}
-
-	public void setWeighted(boolean weighted) {
 		this.weighted = weighted;
+
+		try {
+			this.kNNDistance = distanceClass.newInstance();
+		} catch (InstantiationException e) {
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public double getPercantage() {
@@ -60,9 +61,9 @@ public class KNN {
 	}
 
 	private void train(int testFold) {
-		this.trainSet = kFold.getTrainSet(testFold);
+		trainSet = kFold.getTrainSet(testFold);
 
-		this.currentRange = kFold.getAttributesRange(testFold);
+		kFold.buildCache(testFold);
 	}
 
 	private double test(int testFold) {
@@ -84,7 +85,7 @@ public class KNN {
 			for (int j = 0; j < trainSet.size(); ++j) {
 				Instance trainInstance = trainSet.get(j);
 
-				double distance = calculateDistance(testInstance, trainInstance);
+				double distance = kNNDistance.calculateDistance(dataset, testInstance, trainInstance);
 
 				heap.add(new Pair<Double, Instance>(distance, trainInstance));
 			}
@@ -124,26 +125,6 @@ public class KNN {
 		}
 
 		return (double) right / (right + wrong);
-	}
-
-	private double calculateDistance(Instance a, Instance b) {
-		double distance = 0D;
-
-		for (int i = 0; i < dataset.getAttributes().size(); ++i) {
-			if (i == dataset.getClassIndex()) {
-				continue;
-			}
-
-			AttributeRange attributeRange = currentRange.get(i);
-			double range = attributeRange.getMax() - attributeRange.getMin();
-
-			double x = (Double) a.getAttributeValue(i);
-			double y = (Double) b.getAttributeValue(i);
-
-			distance += Math.pow((x - y) / range, 2);
-		}
-
-		return distance;
 	}
 
 	private double weight(List<Pair<Double, Instance>> instances) {

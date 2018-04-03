@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import br.ufpe.cin.if699.arff.Attribute;
 import br.ufpe.cin.if699.arff.AttributeRange;
@@ -23,6 +24,10 @@ public class KFold {
 	private List<List<AttributeRange>> foldRanges;
 	private List<List<Map<String, Integer>>> foldValueCount;
 	private List<List<Map<String, Map<String, Integer>>>> foldClassValueCount;
+
+	private List<AttributeRange> cachedFoldRange;
+	private List<Map<String, Integer>> cachedFoldValueCount;
+	private List<Map<String, Map<String, Integer>>> cachedFoldClassValueCount;
 
 	public KFold(Dataset dataset, int k) {
 		this.k = k;
@@ -96,6 +101,30 @@ public class KFold {
 		return folds.get(testFold);
 	}
 
+	public List<AttributeRange> getCachedFoldRange() {
+		return this.cachedFoldRange;
+	}
+
+	public List<Map<String, Integer>> getCachedFoldValueCount() {
+		return this.cachedFoldValueCount;
+	}
+
+	public List<Map<String, Map<String, Integer>>> getCachedFoldClassValueCount() {
+		return this.cachedFoldClassValueCount;
+	}
+
+	/**
+	 * Store train set cache
+	 * 
+	 * @param testFold
+	 *          Test fold index (0-based)
+	 */
+	public void buildCache(int testFold) {
+		this.cachedFoldRange = getAttributesRange(testFold);
+		this.cachedFoldValueCount = getValueCount(testFold);
+		this.cachedFoldClassValueCount = getClassValueCount(testFold);
+	}
+
 	/**
 	 * @param testFold
 	 *          Test fold index (0-based)
@@ -128,6 +157,95 @@ public class KFold {
 		}
 
 		return ranges;
+	}
+
+	/**
+	 * @param testFold
+	 *          Test fold index (0-based)
+	 * @return Merged value count from train folds
+	 */
+	public List<Map<String, Integer>> getValueCount(int testFold) {
+		List<Map<String, Integer>> valuesCount = new ArrayList<Map<String, Integer>>();
+
+		for (int i = 0; i < attributes.size(); ++i) {
+			valuesCount.add(new HashMap<String, Integer>());
+		}
+
+		for (int i = 0; i < k; ++i) {
+			if (i == testFold) {
+				continue;
+			}
+
+			for (int j = 0; j < attributes.size(); ++j) {
+				Attribute attribute = attributes.get(j);
+
+				// We only want to normalize nominal attributes
+				if (attribute.getType() != AttributeType.NOMINAL) {
+					continue;
+				}
+
+				Map<String, Integer> valueCount = this.foldValueCount.get(i).get(j);
+
+				for (Entry<String, Integer> entry : valueCount.entrySet()) {
+					String key = entry.getKey();
+					int value = entry.getValue();
+
+					valuesCount.get(j).put(key, valuesCount.get(j).getOrDefault(key, 0) + value);
+				}
+			}
+		}
+
+		return valuesCount;
+	}
+
+	/**
+	 * @param testFold
+	 *          Test fold index (0-based)
+	 * @return Merged class value count from train folds
+	 */
+	public List<Map<String, Map<String, Integer>>> getClassValueCount(int testFold) {
+		List<Map<String, Map<String, Integer>>> classValuesCount = new ArrayList<Map<String, Map<String, Integer>>>();
+
+		for (int i = 0; i < attributes.size(); ++i) {
+			classValuesCount.add(new HashMap<String, Map<String, Integer>>());
+		}
+
+		for (int i = 0; i < k; ++i) {
+			if (i == testFold) {
+				continue;
+			}
+
+			for (int j = 0; j < attributes.size(); ++j) {
+				Attribute attribute = attributes.get(j);
+
+				// We only want to normalize nominal attributes
+				if (attribute.getType() != AttributeType.NOMINAL) {
+					continue;
+				}
+
+				Map<String, Map<String, Integer>> classValueCount = this.foldClassValueCount.get(i).get(j);
+
+				for (Entry<String, Map<String, Integer>> entry : classValueCount.entrySet()) {
+					String key = entry.getKey();
+					Map<String, Integer> value = entry.getValue();
+
+					if (!classValuesCount.get(j).containsKey(key)) {
+						classValuesCount.get(j).put(key, new HashMap<String, Integer>());
+					}
+
+					Map<String, Integer> aux = classValuesCount.get(j).get(key);
+
+					for (Entry<String, Integer> valueEntry : value.entrySet()) {
+						String attributeValue = valueEntry.getKey();
+						int attributeCount = valueEntry.getValue();
+
+						aux.put(attributeValue, aux.getOrDefault(attributeValue, 0) + attributeCount);
+					}
+				}
+			}
+		}
+
+		return classValuesCount;
 	}
 
 	/**
