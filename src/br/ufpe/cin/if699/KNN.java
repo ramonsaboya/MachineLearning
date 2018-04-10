@@ -47,6 +47,9 @@ public class KNN {
 		return percentage;
 	}
 
+	/**
+	 * @return Success rate
+	 */
 	public double evaluate() {
 		percentage = 0D;
 
