@@ -5,17 +5,18 @@ import java.util.Map;
 
 import br.ufpe.cin.if699.KFold;
 import br.ufpe.cin.if699.arff.Attribute;
+import br.ufpe.cin.if699.arff.AttributeRange;
 import br.ufpe.cin.if699.arff.AttributeType;
 import br.ufpe.cin.if699.arff.Dataset;
 import br.ufpe.cin.if699.arff.Instance;
 import br.ufpe.cin.if699.arff.NominalAttribute;
 
-public class VDMDistance implements KNNDistance {
+public class VDMDistance implements Distance {
 
 	private static final int Q = 2;
 
 	@Override
-	public double calculateDistance(Dataset dataset, Instance a, Instance b) {
+	public double calculateDistance(Dataset dataset, Instance a, Instance b, List<AttributeRange> ranges) {
 		double distance = 0D;
 
 		for (int i = 0; i < dataset.getAttributes().size(); ++i) {

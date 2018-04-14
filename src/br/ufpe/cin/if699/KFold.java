@@ -1,5 +1,6 @@
 package br.ufpe.cin.if699;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -11,10 +12,14 @@ import br.ufpe.cin.if699.arff.AttributeRange;
 import br.ufpe.cin.if699.arff.AttributeType;
 import br.ufpe.cin.if699.arff.Dataset;
 import br.ufpe.cin.if699.arff.Instance;
+import br.ufpe.cin.if699.distances.Distance;
+import br.ufpe.cin.if699.prototype.LVQ;
 
 public class KFold {
 
 	private int k;
+
+	private int prototypes;
 
 	private Dataset dataset;
 	private List<Attribute> attributes;
@@ -22,6 +27,7 @@ public class KFold {
 	private List<List<Instance>> folds;
 
 	private List<List<AttributeRange>> foldRanges;
+	private List<Map<String, Integer>> foldClassCount;
 	private List<List<Map<String, Integer>>> foldValueCount;
 	private List<List<Map<String, Map<String, Integer>>>> foldClassValueCount;
 
@@ -29,8 +35,10 @@ public class KFold {
 	private List<Map<String, Integer>> cachedFoldValueCount;
 	private List<Map<String, Map<String, Integer>>> cachedFoldClassValueCount;
 
-	public KFold(Dataset dataset, int k) {
+	public KFold(Dataset dataset, int k, int prototypes) {
 		this.k = k;
+
+		this.prototypes = prototypes;
 
 		this.dataset = dataset;
 		this.attributes = dataset.getAttributes();
@@ -38,12 +46,17 @@ public class KFold {
 		this.folds = new ArrayList<List<Instance>>(k);
 
 		this.foldRanges = new ArrayList<List<AttributeRange>>(k);
+		this.foldClassCount = new ArrayList<Map<String, Integer>>(k);
 		this.foldValueCount = new ArrayList<List<Map<String, Integer>>>(k);
 		this.foldClassValueCount = new ArrayList<List<Map<String, Map<String, Integer>>>>(k);
 	}
 
 	public int getK() {
 		return this.k;
+	}
+
+	public Map<String, Integer> getFoldClassCount(int fold) {
+		return this.foldClassCount.get(fold);
 	}
 
 	/**
@@ -71,6 +84,10 @@ public class KFold {
 		for (int i = 0; index < instances.size(); ++i) {
 			folds.get(i).add(instances.get(index++));
 		}
+	}
+
+	public List<Instance> getFold(int fold) {
+		return folds.get(fold);
 	}
 
 	/**
@@ -123,6 +140,10 @@ public class KFold {
 		this.cachedFoldRange = getAttributesRange(testFold);
 		this.cachedFoldValueCount = getValueCount(testFold);
 		this.cachedFoldClassValueCount = getClassValueCount(testFold);
+	}
+
+	public List<AttributeRange> getFoldAttributesRange(int fold) {
+		return foldRanges.get(fold);
 	}
 
 	/**
@@ -248,6 +269,19 @@ public class KFold {
 		return classValuesCount;
 	}
 
+	public void reduce(Class<? extends Distance> distanceClass, Class<? extends LVQ> type) {
+		try {
+			LVQ lVQ = type.getConstructor(Dataset.class, double.class, int.class, Class.class, int.class).newInstance(dataset, 0.1, 100, distanceClass, prototypes);
+
+			for (int i = 0; i < k; ++i) {
+				folds.set(i, lVQ.generate(i));
+			}
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
+				| SecurityException e) {
+			e.printStackTrace();
+		}
+	}
+
 	/**
 	 * Pre-compute fold attributes range
 	 */
@@ -256,6 +290,7 @@ public class KFold {
 			List<Instance> fold = folds.get(i);
 
 			foldRanges.add(new ArrayList<AttributeRange>());
+			foldClassCount.add(new HashMap<String, Integer>());
 			foldValueCount.add(new ArrayList<Map<String, Integer>>());
 			foldClassValueCount.add(new ArrayList<Map<String, Map<String, Integer>>>());
 
@@ -282,6 +317,7 @@ public class KFold {
 						range.setMax(value);
 						range.setMin(value);
 					} else if (type == AttributeType.NOMINAL) {
+						Map<String, Integer> classCount = foldClassCount.get(i);
 						Map<String, Integer> valueCount = valueCounts.get(j);
 						Map<String, Map<String, Integer>> classValueCount = classValueCounts.get(j);
 
@@ -289,6 +325,8 @@ public class KFold {
 						valueCount.put(value, valueCount.getOrDefault(value, 0) + 1);
 
 						String className = (String) instance.getAttributeValue(dataset.getClassIndex());
+						classCount.put(value, classCount.getOrDefault(className, 0) + 1);
+
 						if (!classValueCount.containsKey(className)) {
 							classValueCount.put(className, new HashMap<String, Integer>());
 						}
@@ -298,28 +336,6 @@ public class KFold {
 					}
 				}
 			}
-		}
-	}
-
-	/**
-	 * Test method to display fold distribution
-	 * 
-	 * @param dataset
-	 * @param foldIndex
-	 */
-	public void count(Dataset dataset, int foldIndex) {
-		List<Instance> fold = folds.get(foldIndex);
-
-		HashMap<String, Integer> cnt = new HashMap<String, Integer>();
-		for (int i = 0; i < fold.size(); ++i) {
-			Instance instance = fold.get(i);
-
-			String className = (String) instance.getAttributeValue(dataset.getClassIndex());
-			cnt.put(className, cnt.getOrDefault(className, 0) + 1);
-		}
-
-		for (String className : cnt.keySet()) {
-			System.out.println("    " + className + ": " + cnt.get(className));
 		}
 	}
 

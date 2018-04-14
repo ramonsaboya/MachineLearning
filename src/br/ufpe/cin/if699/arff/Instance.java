@@ -16,6 +16,16 @@ public class Instance implements Comparable<Instance> {
 		this.hashCode = -1;
 	}
 
+	public Instance(int size) {
+		this.attributeValues = new ArrayList<Object>(size);
+
+		for (int i = 0; i < size; ++i) {
+			this.attributeValues.add(null);
+		}
+
+		this.hashCode = -1;
+	}
+
 	public Object getAttributeValue(int index) {
 		return attributeValues.get(index);
 	}
@@ -26,6 +36,19 @@ public class Instance implements Comparable<Instance> {
 
 	public void insertAttributeValue(Object object) {
 		attributeValues.add(object);
+	}
+
+	@Override
+	public String toString() {
+		String string = "[";
+
+		for (Object value : attributeValues) {
+			string += value.toString() + ", ";
+		}
+
+		string = string.substring(0, string.length() - 2) + "]";
+
+		return string;
 	}
 
 	@Override

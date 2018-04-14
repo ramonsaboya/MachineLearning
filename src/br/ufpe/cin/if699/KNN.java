@@ -7,7 +7,7 @@ import java.util.PriorityQueue;
 
 import br.ufpe.cin.if699.arff.Dataset;
 import br.ufpe.cin.if699.arff.Instance;
-import br.ufpe.cin.if699.distances.KNNDistance;
+import br.ufpe.cin.if699.distances.Distance;
 
 public class KNN {
 
@@ -23,9 +23,9 @@ public class KNN {
 
 	private List<Instance> trainSet;
 
-	private KNNDistance kNNDistance;
+	private Distance kNNDistance;
 
-	public KNN(Dataset dataset, int k, Class<? extends KNNDistance> distanceClass, boolean weighted) {
+	public KNN(Dataset dataset, int k, Class<? extends Distance> distanceClass, boolean weighted) {
 		this.k = k;
 		this.kFold = dataset.getKFold();
 		this.folds = kFold.getK();
@@ -88,7 +88,7 @@ public class KNN {
 			for (int j = 0; j < trainSet.size(); ++j) {
 				Instance trainInstance = trainSet.get(j);
 
-				double distance = kNNDistance.calculateDistance(dataset, testInstance, trainInstance);
+				double distance = kNNDistance.calculateDistance(dataset, testInstance, trainInstance, kFold.getAttributesRange(testFold));
 
 				heap.add(new Pair<Double, Instance>(distance, trainInstance));
 			}

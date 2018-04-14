@@ -11,15 +11,13 @@ import br.ufpe.cin.if699.arff.Dataset;
 import br.ufpe.cin.if699.arff.Instance;
 import br.ufpe.cin.if699.arff.NominalAttribute;
 
-public class HVDMDistance implements KNNDistance {
+public class HVDMDistance implements Distance {
 
 	private static final int Q = 2;
 
 	@Override
-	public double calculateDistance(Dataset dataset, Instance a, Instance b) {
+	public double calculateDistance(Dataset dataset, Instance a, Instance b, List<AttributeRange> ranges) {
 		double distance = 0D;
-
-		KFold kFold = dataset.getKFold();
 
 		for (int i = 0; i < dataset.getAttributes().size(); ++i) {
 			if (i == dataset.getClassIndex()) {
@@ -31,7 +29,7 @@ public class HVDMDistance implements KNNDistance {
 			if (attribute.getType() == AttributeType.NOMINAL) {
 				distance += Math.pow(vdm(dataset, i, a, b), 2);
 			} else {
-				AttributeRange attributeRange = kFold.getCachedFoldRange().get(i);
+				AttributeRange attributeRange = ranges.get(i);
 				double range = attributeRange.getMax() - attributeRange.getMin();
 
 				double x = (Double) a.getAttributeValue(i);

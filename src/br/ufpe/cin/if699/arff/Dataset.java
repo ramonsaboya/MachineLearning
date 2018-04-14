@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Random;
 
 import br.ufpe.cin.if699.KFold;
+import br.ufpe.cin.if699.distances.Distance;
+import br.ufpe.cin.if699.prototype.LVQ1;
 
 public class Dataset {
 
@@ -27,14 +29,18 @@ public class Dataset {
 		this.instances = instances;
 	}
 
-	public void createKFold(int k) {
+	public void createKFold(int k, Class<? extends Distance> distanceClass, int prototypes) {
 		splitClassesInstances(k);
 
-		kFold = new KFold(this, k);
+		kFold = new KFold(this, k, prototypes);
 
 		for (List<Instance> instances : classInstances.values()) {
 			kFold.distribute(instances);
 		}
+
+		kFold.preprocess();
+
+		kFold.reduce(distanceClass, LVQ1.class);
 
 		kFold.preprocess();
 	}
@@ -81,7 +87,7 @@ public class Dataset {
 		}
 
 		// Shuffle each list to ensure better distribution
-		Random random = new Random(k); // Use K as random seed to always get same result
+		Random random = new Random(); // Use K as random seed to always get same result
 		for (List<Instance> list : classInstances.values()) {
 			Collections.shuffle(list, random);
 		}
