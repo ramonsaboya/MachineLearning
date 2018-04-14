@@ -9,7 +9,7 @@ import java.util.Random;
 
 import br.ufpe.cin.if699.KFold;
 import br.ufpe.cin.if699.distances.Distance;
-import br.ufpe.cin.if699.prototype.LVQ1;
+import br.ufpe.cin.if699.prototype.LVQ;
 
 public class Dataset {
 
@@ -29,7 +29,8 @@ public class Dataset {
 		this.instances = instances;
 	}
 
-	public void createKFold(int k, Class<? extends Distance> distanceClass, int prototypes) {
+	@SafeVarargs
+	public final void createKFold(int k, Class<? extends Distance> distanceClass, int prototypes, Class<? extends LVQ>... generators) {
 		splitClassesInstances(k);
 
 		kFold = new KFold(this, k, prototypes);
@@ -40,9 +41,11 @@ public class Dataset {
 
 		kFold.preprocess();
 
-		kFold.reduce(distanceClass, LVQ1.class);
+		for (Class<? extends LVQ> generator : generators) {
+			kFold.reduce(distanceClass, generator);
 
-		kFold.preprocess();
+			kFold.preprocess();
+		}
 	}
 
 	public String getRelation() {

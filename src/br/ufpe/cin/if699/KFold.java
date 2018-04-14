@@ -286,6 +286,11 @@ public class KFold {
 	 * Pre-compute fold attributes range
 	 */
 	public void preprocess() {
+		foldRanges.clear();
+		foldClassCount.clear();
+		foldValueCount.clear();
+		foldClassValueCount.clear();
+
 		for (int i = 0; i < k; ++i) {
 			List<Instance> fold = folds.get(i);
 
